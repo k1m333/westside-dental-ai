@@ -1,29 +1,11 @@
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+import os
 
 app = FastAPI()
 
-HTML_FORM = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Westside Dentistry AI</title>
-    <style>
-        body {{ font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }}
-        .response {{ margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }}
-    </style>
-</head>
-<body>
-    <h1>Westside Children's Dentistry AI Assistant</h1>
-    <form method="post">
-        <input type="text" name="prompt" placeholder="Ask about hours, services, insurance..." style="width: 70%; padding: 8px;">
-        <button type="submit" style="padding: 8px 16px;">Ask</button>
-    </form>
-    <div class="response">{response}</div>
-</body>
-</html>
-"""
-
+# Simple keyword‑based answer function
 def answer_question(query: str) -> str:
     q = query.lower()
     if 'hour' in q or 'when' in q or 'open' in q:
@@ -37,11 +19,77 @@ def answer_question(query: str) -> str:
     else:
         return "I'm not sure about that. Please call our office for more information."
 
+# HTML with chat interface (no separate /ask endpoint)
+HTML_PAGE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Westside Dentistry AI</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+        .chat-container { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .chat-header { background: #0078d4; color: white; padding: 15px; font-size: 18px; }
+        .chat-messages { height: 400px; overflow-y: auto; padding: 15px; background: #fafafa; }
+        .message { margin-bottom: 15px; display: flex; }
+        .user-message { justify-content: flex-end; }
+        .bot-message { justify-content: flex-start; }
+        .bubble { max-width: 70%; padding: 10px 15px; border-radius: 18px; }
+        .user-bubble { background: #0078d4; color: white; }
+        .bot-bubble { background: #e9ecef; color: #333; }
+        .input-area { display: flex; padding: 15px; background: white; border-top: 1px solid #ddd; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; margin-right: 10px; }
+        button { background: #0078d4; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
+        button:hover { background: #005a9e; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">🤖 Westside Children's Dentistry AI Assistant</div>
+        <div class="chat-messages" id="messages">
+            <div class="message bot-message"><div class="bubble bot-bubble">Hello! Ask me about hours, services, or insurance.</div></div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="prompt" placeholder="Type your question here..." onkeypress="if(event.keyCode==13) sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('prompt');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+            
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<div class="message user-message"><div class="bubble user-bubble">${escapeHtml(prompt)}</div></div>`;
+            input.value = '';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            const formData = new FormData();
+            formData.append('prompt', prompt);
+            const response = await fetch('/', { method: 'POST', body: formData });
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const responseText = doc.querySelector('.response')?.innerText || 'Error. Please try again.';
+            messagesDiv.innerHTML += `<div class="message bot-message"><div class="bubble bot-bubble">${escapeHtml(responseText)}</div></div>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
+"""
+
 @app.get("/", response_class=HTMLResponse)
 async def get_form():
-    return HTML_FORM.format(response="")
+    return HTML_PAGE
 
 @app.post("/", response_class=HTMLResponse)
 async def post_form(prompt: str = Form(...)):
     response = answer_question(prompt)
-    return HTML_FORM.format(response=f'<div class="response">{response}</div>')
+    return f'<div class="response">{response}</div>'
