@@ -5,7 +5,7 @@ import os
 
 app = FastAPI()
 
-# Simple keyword‑based answer function
+# Simple keyword‑based answer function (replace with your LLM later)
 def answer_question(query: str) -> str:
     q = query.lower()
     if 'hour' in q or 'when' in q or 'open' in q:
@@ -19,40 +19,74 @@ def answer_question(query: str) -> str:
     else:
         return "I'm not sure about that. Please call our office for more information."
 
-# HTML with chat interface (no separate /ask endpoint)
+# HTML with chat interface and pricing section
 HTML_PAGE = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>Westside Dentistry AI</title>
     <style>
-        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
-        .chat-container { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
-        .chat-header { background: #0078d4; color: white; padding: 15px; font-size: 18px; }
-        .chat-messages { height: 400px; overflow-y: auto; padding: 15px; background: #fafafa; }
-        .message { margin-bottom: 15px; display: flex; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f7ff; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 24px; overflow: hidden; }
+        .card-header { background: #0078d4; color: white; padding: 16px 20px; font-size: 20px; font-weight: bold; }
+        .card-body { padding: 20px; }
+        .chat-messages { height: 400px; overflow-y: auto; padding: 16px; background: #fafafa; border-bottom: 1px solid #eee; }
+        .message { margin-bottom: 16px; display: flex; }
         .user-message { justify-content: flex-end; }
         .bot-message { justify-content: flex-start; }
-        .bubble { max-width: 70%; padding: 10px 15px; border-radius: 18px; }
+        .bubble { max-width: 70%; padding: 10px 16px; border-radius: 20px; }
         .user-bubble { background: #0078d4; color: white; }
         .bot-bubble { background: #e9ecef; color: #333; }
-        .input-area { display: flex; padding: 15px; background: white; border-top: 1px solid #ddd; }
-        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; margin-right: 10px; }
-        button { background: #0078d4; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
+        .input-area { display: flex; padding: 16px; background: white; gap: 10px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 24px; font-size: 16px; }
+        button { background: #0078d4; color: white; border: none; padding: 12px 24px; border-radius: 24px; cursor: pointer; font-size: 16px; }
         button:hover { background: #005a9e; }
+        .pricing-grid { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .pricing-card { flex: 1; min-width: 180px; background: #f8f9fa; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e0e0e0; }
+        .price { font-size: 28px; font-weight: bold; color: #0078d4; margin: 10px 0; }
+        .contact-btn { background: #28a745; margin-top: 20px; display: inline-block; padding: 12px 30px; border-radius: 30px; color: white; text-decoration: none; }
+        .contact-btn:hover { background: #218838; }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">🤖 Westside Children's Dentistry AI Assistant</div>
+    <div class="card">
+        <div class="card-header">🦷 Westside Children's Dentistry AI Assistant</div>
         <div class="chat-messages" id="messages">
-            <div class="message bot-message"><div class="bubble bot-bubble">Hello! Ask me about hours, services, or insurance.</div></div>
+            <div class="message bot-message"><div class="bubble bot-bubble">Hello! Ask me about hours, services, insurance, or appointments.</div></div>
         </div>
         <div class="input-area">
             <input type="text" id="prompt" placeholder="Type your question here..." onkeypress="if(event.keyCode==13) sendMessage()">
             <button onclick="sendMessage()">Send</button>
         </div>
     </div>
+
+    <div class="card">
+        <div class="card-header">💰 Pricing</div>
+        <div class="card-body">
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Basic</h3>
+                    <div class="price">$200<span style="font-size: 14px;">/month</span></div>
+                    <p>Up to 500 questions/month<br>Email support<br>24/7 uptime</p>
+                </div>
+                <div class="pricing-card">
+                    <h3>Pro</h3>
+                    <div class="price">$500<span style="font-size: 14px;">/month</span></div>
+                    <p>Up to 2,000 questions/month<br>Priority support<br>Custom answers</p>
+                </div>
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">Custom</div>
+                    <p>Unlimited questions<br>Dedicated support<br>Full integration</p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="mailto:ajkimx333@gmail.com?subject=Westside%20Dental%20AI%20Demo" class="contact-btn">📧 Contact for Demo</a>
+            </div>
+        </div>
+    </div>
+
     <script>
         async function sendMessage() {
             const input = document.getElementById('prompt');
